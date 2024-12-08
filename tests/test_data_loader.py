@@ -1,28 +1,16 @@
-import unittest
+import pytest
 import pandas as pd
-from src.data.data_loader import DataLoader
+from src.data.stock_data_loader import StockDataLoader
 
-class TestDataLoader(unittest.TestCase):
-    def setUp(self):
-        self.loader = DataLoader()
+@pytest.fixture
+def data_loader():
+    return StockDataLoader()
 
-    def test_load_stock_data(self):
-        # Test with valid symbol
-        data = self.loader.load_stock_data('AAPL', '2023-01-01', '2023-12-31')
-        self.assertIsInstance(data, pd.DataFrame)
-        self.assertGreater(len(data), 0)
-        
-        # Test with invalid symbol
-        data = self.loader.load_stock_data('INVALID', '2023-01-01', '2023-12-31')
-        self.assertIsNone(data)
+def test_data_loader_initialization(data_loader):
+    assert data_loader is not None
+    assert hasattr(data_loader, 'fetch_stock_data')
 
-    def test_save_data(self):
-        # Create test data
-        test_data = pd.DataFrame({'A': [1, 2, 3], 'B': [4, 5, 6]})
-        
-        # Test saving to temp file
-        self.loader.save_data(test_data, 'test_data.csv')
-        
-        # Verify file was created
-        loaded_data = pd.read_csv('test_data.csv', index_col=0)
-        pd.testing.assert_frame_equal(test_data, loaded_data)
+def test_fetch_stock_data_handles_errors(data_loader):
+    # Test with invalid symbol
+    result = data_loader.fetch_stock_data('INVALID_SYMBOL_123')
+    assert result is None

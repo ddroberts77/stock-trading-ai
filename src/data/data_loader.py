@@ -1,32 +1,42 @@
-import yfinance as yf
 import pandas as pd
-from typing import List, Dict, Union
+import yfinance as yf
+from datetime import datetime, timedelta
 
-class MarketDataLoader:
-    def __init__(self, symbols: List[str], start_date: str, end_date: str):
-        self.symbols = symbols
-        self.start_date = start_date
-        self.end_date = end_date
-        
-    def fetch_stock_data(self) -> Dict[str, pd.DataFrame]:
-        """Fetch historical data for given symbols."""
-        data = {}
-        for symbol in self.symbols:
-            ticker = yf.Ticker(symbol)
-            data[symbol] = ticker.history(start=self.start_date, end=self.end_date)
-        return data
-    
-    def get_technical_indicators(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Calculate technical indicators."""
-        df['SMA_20'] = df['Close'].rolling(window=20).mean()
-        df['SMA_50'] = df['Close'].rolling(window=50).mean()
-        df['RSI'] = self._calculate_rsi(df['Close'])
-        return df
-    
-    def _calculate_rsi(self, prices: pd.Series, periods: int = 14) -> pd.Series:
-        """Calculate Relative Strength Index."""
-        delta = prices.diff()
-        gain = (delta.where(delta > 0, 0)).rolling(window=periods).mean()
-        loss = (-delta.where(delta < 0, 0)).rolling(window=periods).mean()
-        rs = gain / loss
-        return 100 - (100 / (1 + rs))
+class DataLoader:
+    @staticmethod
+    def load_stock_data(symbol: str, start_date: str = None, end_date: str = None) -> pd.DataFrame:
+        """Load historical stock data from Yahoo Finance
+
+        Args:
+            symbol (str): Stock symbol
+            start_date (str, optional): Start date in YYYY-MM-DD format
+            end_date (str, optional): End date in YYYY-MM-DD format
+
+        Returns:
+            pd.DataFrame: Historical stock data
+        """
+        if not start_date:
+            start_date = (datetime.now() - timedelta(days=365)).strftime('%Y-%m-%d')
+        if not end_date:
+            end_date = datetime.now().strftime('%Y-%m-%d')
+            
+        try:
+            data = yf.download(symbol, start=start_date, end=end_date)
+            return data
+        except Exception as e:
+            print(f"Error loading data for {symbol}: {str(e)}")
+            return None
+
+    @staticmethod
+    def save_data(data: pd.DataFrame, filepath: str) -> None:
+        """Save data to CSV file
+
+        Args:
+            data (pd.DataFrame): Data to save
+            filepath (str): Path to save file
+        """
+        try:
+            data.to_csv(filepath)
+            print(f"Data saved to {filepath}")
+        except Exception as e:
+            print(f"Error saving data: {str(e)}")

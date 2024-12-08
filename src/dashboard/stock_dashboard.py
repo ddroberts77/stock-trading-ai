@@ -1,57 +1,38 @@
 import dash
 from dash import html, dcc
-import plotly.graph_objs as go
 from dash.dependencies import Input, Output
-from datetime import datetime
+import plotly.graph_objs as go
+import yfinance as yf
 import pandas as pd
-import os
-import json
+from datetime import datetime, timedelta
 
 class StockDashboard:
     def __init__(self):
         self.app = dash.Dash(__name__)
-        self.data_path = 'data/stocks/'
         self.setup_layout()
         self.setup_callbacks()
-    
-    def load_available_stocks(self):
-        """Load all available stock data"""
-        stocks = []
-        for file in os.listdir(self.data_path):
-            if file.endswith('_meta.json'):
-                with open(os.path.join(self.data_path, file)) as f:
-                    meta = json.load(f)
-                    stocks.append({
-                        'label': f"{meta['company_name']} ({meta['symbol']})",
-                        'value': meta['symbol']
-                    })
-        return stocks
     
     def setup_layout(self):
         self.app.layout = html.Div([
             html.H1('Stock Trading Dashboard'),
             
-            # Stock selector
-            dcc.Dropdown(
-                id='stock-selector',
-                options=self.load_available_stocks(),
-                value=None,
-                placeholder='Select a stock...'
-            ),
+            html.Div([
+                html.Label('Stock Symbol:'),
+                dcc.Input(
+                    id='stock-input',
+                    value='AAPL',
+                    type='text'
+                ),
+                html.Button('Load Data', id='load-button', n_clicks=0)
+            ]),
             
-            # Price chart
             dcc.Graph(id='price-chart'),
             
-            # Stock info
             html.Div(id='stock-info'),
             
-            # Refresh button
-            html.Button('Refresh Data', id='refresh-button'),
-            
-            # Auto refresh interval
             dcc.Interval(
                 id='interval-component',
-                interval=300*1000,  # 5 minutes in milliseconds
+                interval=60*1000,  # updates every minute
                 n_intervals=0
             )
         ])
@@ -60,63 +41,52 @@ class StockDashboard:
         @self.app.callback(
             [Output('price-chart', 'figure'),
              Output('stock-info', 'children')],
-            [Input('stock-selector', 'value'),
+            [Input('load-button', 'n_clicks'),
+             Input('stock-input', 'value'),
              Input('interval-component', 'n_intervals')]
         )
-        def update_graph(selected_stock, n):
-            if not selected_stock:
+        def update_data(n_clicks, symbol, n_intervals):
+            if not symbol:
                 return {}, ''
             
-            # Load data
-            df = pd.read_csv(f'{self.data_path}{selected_stock}_data.csv')
-            with open(f'{self.data_path}{selected_stock}_meta.json') as f:
-                meta = json.load(f)
+            # Get stock data
+            stock = yf.Ticker(symbol)
+            df = stock.history(period='1mo')
             
             # Create figure
             fig = go.Figure()
             
-            # Add price line
-            fig.add_trace(go.Scatter(
-                x=df.index, y=df['Close'],
-                mode='lines',
-                name='Close Price'
+            fig.add_trace(go.Candlestick(
+                x=df.index,
+                open=df['Open'],
+                high=df['High'],
+                low=df['Low'],
+                close=df['Close'],
+                name='Price'
             ))
             
-            # Add moving averages
-            fig.add_trace(go.Scatter(
-                x=df.index, y=df['SMA_20'],
-                mode='lines',
-                name='20 Day MA',
-                line=dict(dash='dash')
-            ))
-            
-            fig.add_trace(go.Scatter(
-                x=df.index, y=df['SMA_50'],
-                mode='lines',
-                name='50 Day MA',
-                line=dict(dash='dash')
-            ))
-            
-            # Update layout
             fig.update_layout(
-                title=f"{meta['company_name']} Stock Price",
-                xaxis_title="Date",
-                yaxis_title="Price",
-                hovermode='x unified'
+                title=f'{symbol} Stock Price',
+                yaxis_title='Price',
+                xaxis_title='Date'
             )
             
-            # Create info div
-            info = html.Div([
+            # Get current info
+            info = stock.info
+            current_price = info.get('regularMarketPrice', 'N/A')
+            market_cap = info.get('marketCap', 'N/A')
+            
+            info_div = html.Div([
                 html.H3('Stock Information'),
-                html.P(f"Current Price: ${meta['current_price']:.2f}"),
-                html.P(f"Last Updated: {meta['last_updated']}")
+                html.P(f'Current Price: ${current_price}'),
+                html.P(f'Market Cap: ${market_cap:,}' if isinstance(market_cap, (int, float)) else f'Market Cap: {market_cap}')
             ])
             
-            return fig, info
+            return fig, info_div
     
-    def run_server(self, debug=True):
-        self.app.run_server(debug=debug)
+    def run(self):
+        self.app.run_server(debug=True)
 
 if __name__ == '__main__':
     dashboard = StockDashboard()
-    dashboard.run_server()
+    dashboard.run()

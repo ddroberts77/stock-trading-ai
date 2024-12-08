@@ -10,14 +10,18 @@ on:
 jobs:
   test:
     runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        python-version: ['3.10']
+      fail-fast: false
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
-    - name: Set up Python
-      uses: actions/setup-python@v4
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
       with:
-        python-version: '3.10'
+        python-version: ${{ matrix.python-version }}
         cache: 'pip'
     
     - name: Install dependencies
@@ -28,31 +32,23 @@ jobs:
     
     - name: Run tests
       run: |
-        python -m pytest tests/ --cov=src --cov-report=xml
+        mkdir -p test-results
+        pytest tests/ --cov=src --cov-report=xml --cov-report=html -v > test-results/pytest-output.txt
     
-    - name: Upload coverage reports to Codecov
-      uses: codecov/codecov-action@v3
-      env:
-        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
-    - name: Create test report
+    - name: Upload test results
       if: always()
-      run: |
-        echo "# Test Results Summary" > test-report.md
-        echo "## Coverage Report" >> test-report.md
-        coverage report >> test-report.md
-    
-    - name: Create Issue
-      if: always()
-      uses: actions/github-script@v6
+      uses: actions/upload-artifact@v4
       with:
-        script: |
-          const fs = require('fs');
-          const testReport = fs.readFileSync('test-report.md', 'utf8');
-          await github.rest.issues.create({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            title: `Test Results - ${new Date().toISOString().split('T')[0]}`,
-            body: testReport,
-            labels: ['test-report']
-          });
+        name: test-results
+        path: test-results/
+        retention-days: 30
+    
+    - name: Upload coverage
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: |
+          coverage.xml
+          htmlcov/
+        retention-days: 30

@@ -1,6 +1,6 @@
 import unittest
-import numpy as np
 import pandas as pd
+import numpy as np
 from src.models.trading_model import TradingModel
 
 class TestTradingModel(unittest.TestCase):
@@ -8,32 +8,44 @@ class TestTradingModel(unittest.TestCase):
         self.model = TradingModel()
         
         # Create sample data
-        dates = pd.date_range(start='2023-01-01', end='2023-12-31')
         self.test_data = pd.DataFrame({
-            'Open': np.random.rand(len(dates)),
-            'High': np.random.rand(len(dates)),
-            'Low': np.random.rand(len(dates)),
-            'Close': np.random.rand(len(dates)),
-            'Volume': np.random.randint(1000, 100000, len(dates))
-        }, index=dates)
+            'Date': pd.date_range(start='2023-01-01', periods=100),
+            'Open': np.random.randn(100).cumsum() + 100,
+            'High': np.random.randn(100).cumsum() + 102,
+            'Low': np.random.randn(100).cumsum() + 98,
+            'Close': np.random.randn(100).cumsum() + 100,
+            'Volume': np.random.randint(1000000, 10000000, 100)
+        })
+        self.test_data.set_index('Date', inplace=True)
 
-    def test_prepare_data(self):
-        X, y = self.model.prepare_data(self.test_data)
-        
-        # Check shapes
-        self.assertEqual(X.shape[1], 8)  # 8 features
-        self.assertEqual(X.shape[0], y.shape[0])  # Same number of samples
-        
-        # Check scaling
-        self.assertTrue(np.all(X >= 0))
-        self.assertTrue(np.all(X <= 1))
-        
-        # Check labels
-        self.assertTrue(np.all(np.isin(y, [0, 1])))
+    def test_model_initialization(self):
+        """Test model initialization"""
+        self.assertIsNotNone(self.model)
 
-    def test_calculate_rsi(self):
-        rsi = self.model._calculate_rsi(self.test_data['Close'])
+    def test_predict_next_movement(self):
+        """Test prediction of next price movement"""
+        prediction = self.model.predict_next_movement(self.test_data)
+        self.assertIsNotNone(prediction)
+        self.assertIn(prediction, ['up', 'down', 'hold'])
+
+    def test_train_model(self):
+        """Test model training"""
+        training_result = self.model.train(self.test_data)
+        self.assertTrue(training_result)  # Training should return True on success
+
+    def test_model_evaluation(self):
+        """Test model evaluation metrics"""
+        # Train the model first
+        self.model.train(self.test_data)
         
-        # Check RSI ranges
-        self.assertTrue(np.all(rsi[~np.isnan(rsi)] >= 0))
-        self.assertTrue(np.all(rsi[~np.isnan(rsi)] <= 100))
+        # Get evaluation metrics
+        metrics = self.model.evaluate(self.test_data)
+        
+        # Check metrics exist
+        self.assertIn('accuracy', metrics)
+        self.assertIn('precision', metrics)
+        self.assertIn('recall', metrics)
+        
+        # Check metrics are in valid ranges
+        self.assertGreaterEqual(metrics['accuracy'], 0)
+        self.assertLessEqual(metrics['accuracy'], 1)

@@ -3,12 +3,16 @@ import torch
 from src.models.trading_model import TradingModel
 
 @pytest.fixture
-def model():
+def device():
+    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+@pytest.fixture
+def model(device):
     return TradingModel(
         input_size=10,
         hidden_size=32,
         num_assets=5
-    )
+    ).to(device)
 
 def test_trading_model_initialization(model):
     assert isinstance(model, TradingModel)
@@ -16,35 +20,27 @@ def test_trading_model_initialization(model):
     assert model.hidden_size == 32
     assert model.num_assets == 5
 
-def test_trading_model_forward_pass(model):
+def test_trading_model_forward_pass(model, device):
     batch_size = 16
     seq_length = 20
     
-    # Create dummy input data
-    market_data = torch.randn(batch_size, seq_length, 10)
+    market_data = torch.randn(batch_size, seq_length, 10).to(device)
     
-    # Get model predictions
     with torch.no_grad():
         positions = model(market_data)
     
-    # Check output shape and constraints
     assert positions.shape == (batch_size, model.num_assets)
     assert torch.all(positions >= -1) and torch.all(positions <= 1)
-    
-    # Sum of absolute positions should be <= 1 (leverage constraint)
-    assert torch.all(torch.abs(positions).sum(dim=1) <= 1.01)  # Allow small numerical error
+    assert torch.all(torch.abs(positions).sum(dim=1) <= 1.01)
 
-def test_trading_model_loss_calculation(model):
+def test_trading_model_loss_calculation(model, device):
     batch_size = 8
     
-    # Generate dummy positions and returns
-    positions = torch.randn(batch_size, model.num_assets)
-    asset_returns = torch.randn(batch_size, model.num_assets)
+    positions = torch.randn(batch_size, model.num_assets).to(device)
+    asset_returns = torch.randn(batch_size, model.num_assets).to(device)
     
-    # Calculate portfolio returns
     portfolio_returns = (positions * asset_returns).sum(dim=1)
     
-    # Calculate Sharpe ratio loss
     returns_mean = portfolio_returns.mean()
     returns_std = portfolio_returns.std()
     sharpe = returns_mean / (returns_std + 1e-6)
@@ -52,22 +48,15 @@ def test_trading_model_loss_calculation(model):
     assert isinstance(sharpe.item(), float)
     assert not torch.isnan(sharpe)
 
-def test_trading_model_gradient_flow(model):
+def test_trading_model_gradient_flow(model, device):
     batch_size = 4
     seq_length = 10
     
-    # Create inputs that require gradients
-    market_data = torch.randn(batch_size, seq_length, 10, requires_grad=True)
+    market_data = torch.randn(batch_size, seq_length, 10, requires_grad=True).to(device)
     
-    # Forward pass
     positions = model(market_data)
-    
-    # Dummy loss
     loss = positions.mean()
-    
-    # Test backward pass
     loss.backward()
     
-    # Verify gradients exist and are finite
     assert market_data.grad is not None
     assert torch.isfinite(market_data.grad).all()

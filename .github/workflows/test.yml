@@ -1,1 +1,40 @@
-bmFtZTogUHl0aG9uIFRlc3RzCgpvbjogW3B1c2gsIHB1bGxfcmVxdWVzdF0KCmpvYnM6CiAgdGVzdDoKICAgIHJ1bnMtb246IHVidW50dS1sYXRlc3QKICAgIHN0cmF0ZWd5OgogICAgICBtYXRyaXg6CiAgICAgICAgcHl0aG9uLXZlcnNpb246IFsiMy45IiwgIjMuMTAiLCAiMy4xMSJdCiAgICAgIGZhaWwtZmFzdDogZmFsc2UgICMgQ29udGludWUgd2l0aCBvdGhlciB2ZXJzaW9ucyBpZiBvbmUgZmFpbHMKCiAgICBzdGVwczoKICAgIC0gdXNlczogYWN0aW9ucy9jaGVja291dEB2NAogICAgLSBuYW1lOiBTZXQgdXAgUHl0aG9uICR7eyBtYXRyaXgucHl0aG9uLXZlcnNpb24gfX0KICAgICAgdXNlczogYWN0aW9ucy9zZXR1cC1weXRob25AdjQKICAgICAgd2l0aDoKICAgICAgICBweXRob24tdmVyc2lvbjogJHt7IG1hdHJpeC5weXRob24tdmVyc2lvbiB9fQogICAgCiAgICAtIG5hbWU6IEluc3RhbGwgZGVwZW5kZW5jaWVzCiAgICAgIHJ1bjogfAogICAgICAgIHB5dGhvbiAtbSBwaXAgaW5zdGFsbCAtLXVwZ3JhZGUgcGlwCiAgICAgICAgcGlwIGluc3RhbGwgLXIgcmVxdWlyZW1lbnRzLnR4dAogICAgICAgIHBpcCBpbnN0YWxsIHB5dGVzdCBweXRlc3QtY292CiAgICAKICAgIC0gbmFtZTogUnVuIHRlc3RzCiAgICAgIHJ1bjogfAogICAgICAgIHB5dGVzdCB0ZXN0cy8gLXYgLS1jb3Y9c3JjCiAgICAKICAgIC0gbmFtZTogVXBsb2FkIHRlc3QgcmVzdWx0cwogICAgICB1c2VzOiBhY3Rpb25zL3VwbG9hZC1hcnRpZmFjdEB2NAogICAgICB3aXRoOgogICAgICAgIG5hbWU6IHRlc3QtcmVzdWx0cy0ke3sgbWF0cml4LnB5dGhvbi12ZXJzaW9uIH19CiAgICAgICAgcGF0aDogdGVzdC1yZXN1bHRzLw==
+name: Python Tests
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11"]
+      fail-fast: false
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Create test directories
+      run: |
+        mkdir -p test-results/junit
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip setuptools wheel
+        pip install torch numpy pandas pytest pytest-cov pytest-junit scikit-learn
+    
+    - name: Run tests
+      run: |
+        PYTHONPATH=$PYTHONPATH:$(pwd) pytest tests/ -v --cov=src --junitxml=test-results/junit/test-results.xml
+    
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-${{ matrix.python-version }}
+        path: test-results
+        retention-days: 30

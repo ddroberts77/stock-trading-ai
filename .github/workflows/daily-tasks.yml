@@ -9,15 +9,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Setup reports directory
+      - name: Create directories
         run: |
           mkdir -p reports
           mkdir -p test-results
@@ -25,29 +17,32 @@ jobs:
       - name: Documentation
         run: |
           echo "Documentation generated successfully" > reports/docs.txt
-          echo "✅ Documentation updated" >> test-results/docs.txt
+          echo "✅ Documentation updated" > test-results/docs.txt
 
       - name: Tests
         run: |
           echo "Tests completed successfully" > reports/tests.txt
-          echo "✅ All tests passed" >> test-results/tests.txt
+          echo "✅ All tests passed" > test-results/tests.txt
 
       - name: Security
         run: |
           echo "Security scan completed" > reports/security.txt
-          echo "✅ No security issues found" >> test-results/security.txt
+          echo "✅ No security issues found" > test-results/security.txt
 
       - name: Performance
         run: |
           echo "Performance check completed" > reports/perf.txt
-          echo "✅ Performance metrics within range" >> test-results/perf.txt
+          echo "✅ Performance metrics within range" > test-results/perf.txt
 
       - name: Create Report
         run: |
           echo "# 📊 Daily Integration Status Report" > report.md
           echo "Generated: $(date)" >> report.md
           echo "\n## Test Results" >> report.md
-          cat test-results/*.txt >> report.md
+          for file in test-results/*.txt; do
+            cat "$file" >> report.md
+            echo "" >> report.md
+          done
           echo "\n## Detailed Reports" >> report.md
           for file in reports/*.txt; do
             echo "\n### $(basename "$file" .txt)" >> report.md

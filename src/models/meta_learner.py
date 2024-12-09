@@ -28,9 +28,16 @@ class MarketMetaLearner(nn.Module):
         )
     
     def forward(self, x: torch.Tensor, market_data: torch.Tensor):
+        # x: [batch_size, seq_length, input_size]
+        # market_data: [batch_size, 5]
         lstm_out, (h_n, _) = self.lstm(x)
-        final_hidden = h_n[-1]
+        final_hidden = h_n[-1]  # [batch_size, hidden_size]
+        
+        # Combine LSTM output with market data
         combined = torch.cat([final_hidden, market_data], dim=1)
+        
+        # Generate outputs
         market_regime = self.regime_head(combined)
         adaptation_params = self.adaptation_head(combined)
+        
         return market_regime, adaptation_params

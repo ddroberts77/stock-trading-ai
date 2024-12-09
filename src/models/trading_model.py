@@ -19,14 +19,20 @@ class TradingModel(nn.Module):
             nn.Linear(hidden_size, hidden_size),
             nn.ReLU(),
             nn.Linear(hidden_size, num_assets),
-            nn.Tanh()
+            nn.Tanh()  # Constrain positions to [-1, 1]
         )
     
     def forward(self, market_data: torch.Tensor) -> torch.Tensor:
+        # market_data: [batch_size, seq_length, input_size]
         lstm_out, (h_n, _) = self.lstm(market_data)
-        final_hidden = h_n[-1]
-        positions = self.position_head(final_hidden)
+        final_hidden = h_n[-1]  # [batch_size, hidden_size]
+        
+        # Generate positions
+        positions = self.position_head(final_hidden)  # [batch_size, num_assets]
+        
+        # Apply leverage constraint
         abs_positions = torch.abs(positions)
         scaling_factors = torch.clamp(abs_positions.sum(dim=1), min=1).unsqueeze(1)
         positions = positions / scaling_factors
+        
         return positions

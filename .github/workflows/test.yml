@@ -21,12 +21,27 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip setuptools wheel
-        pip install torch==2.0.0 --index-url https://download.pytorch.org/whl/cpu
         pip install pytest pytest-cov numpy pandas scikit-learn
+        pip install torch --index-url https://download.pytorch.org/whl/cpu
         pip install -e .
+    
+    - name: Set up environment
+      run: |
+        mkdir -p tests/coverage
+        touch tests/__init__.py
+        chmod -R 777 tests/coverage
     
     - name: Run tests
       env:
         PYTHONPATH: ${{ github.workspace }}
       run: |
-        pytest tests/ -v --cov=src
+        cd ${{ github.workspace }}
+        pytest tests/ -v --cov=src --cov-report=html:tests/coverage
+    
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-${{ matrix.python-version }}
+        path: tests/coverage
+        retention-days: 30

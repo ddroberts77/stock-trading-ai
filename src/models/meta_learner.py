@@ -8,7 +8,6 @@ class MarketMetaLearner(nn.Module):
         self.hidden_size = hidden_size
         self.num_layers = num_layers
         
-        # Feature extraction
         self.lstm = nn.LSTM(
             input_size=input_size,
             hidden_size=hidden_size,
@@ -16,14 +15,12 @@ class MarketMetaLearner(nn.Module):
             batch_first=True
         )
         
-        # Market regime classifier
         self.regime_head = nn.Sequential(
             nn.Linear(hidden_size + 5, hidden_size),
             nn.ReLU(),
             nn.Linear(hidden_size, 3)
         )
         
-        # Adaptation parameters generator
         self.adaptation_head = nn.Sequential(
             nn.Linear(hidden_size + 5, hidden_size),
             nn.ReLU(),

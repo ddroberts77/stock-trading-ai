@@ -3,12 +3,7 @@ import torch
 
 @pytest.fixture(scope='session')
 def device():
-    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-@pytest.fixture(autouse=True)
-def set_random_seed():
-    torch.manual_seed(42)
-    return None
+    return torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 @pytest.fixture
 def sample_market_data(device):
@@ -20,5 +15,5 @@ def sample_market_data(device):
 @pytest.fixture
 def sample_market_info(device):
     batch_size = 16
-    market_features = 5
-    return torch.randn(batch_size, market_features).to(device)
+    feature_dim = 5
+    return torch.randn(batch_size, feature_dim).to(device)

@@ -8,7 +8,6 @@ class TradingModel(nn.Module):
         self.hidden_size = hidden_size
         self.num_assets = num_assets
         
-        # Sequential price processing
         self.lstm = nn.LSTM(
             input_size=input_size,
             hidden_size=hidden_size,
@@ -16,7 +15,6 @@ class TradingModel(nn.Module):
             batch_first=True
         )
         
-        # Position generation with constraints
         self.position_head = nn.Sequential(
             nn.Linear(hidden_size, hidden_size),
             nn.ReLU(),
@@ -32,7 +30,7 @@ class TradingModel(nn.Module):
         # Generate positions
         positions = self.position_head(final_hidden)  # [batch_size, num_assets]
         
-        # Apply leverage constraint: sum of absolute positions <= 1
+        # Apply leverage constraint
         abs_positions = torch.abs(positions)
         scaling_factors = torch.clamp(abs_positions.sum(dim=1), min=1).unsqueeze(1)
         positions = positions / scaling_factors

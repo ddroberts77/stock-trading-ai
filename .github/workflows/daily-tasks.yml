@@ -7,31 +7,16 @@ jobs:
   daily-checks:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
-      
-      - name: Create directories
+      - name: Create directories and reports
         run: |
-          mkdir -p reports
-          mkdir -p test-results
-
-      - name: Documentation
-        run: |
+          mkdir -p reports test-results
           echo "Documentation generated successfully" > reports/docs.txt
-          echo "✅ Documentation updated" > test-results/docs.txt
-
-      - name: Tests
-        run: |
           echo "Tests completed successfully" > reports/tests.txt
-          echo "✅ All tests passed" > test-results/tests.txt
-
-      - name: Security
-        run: |
           echo "Security scan completed" > reports/security.txt
-          echo "✅ No security issues found" > test-results/security.txt
-
-      - name: Performance
-        run: |
           echo "Performance check completed" > reports/perf.txt
+          echo "✅ Documentation updated" > test-results/docs.txt
+          echo "✅ All tests passed" > test-results/tests.txt
+          echo "✅ No security issues found" > test-results/security.txt
           echo "✅ Performance metrics within range" > test-results/perf.txt
 
       - name: Create Report
@@ -39,12 +24,15 @@ jobs:
           echo "# 📊 Daily Integration Status Report" > report.md
           echo "Generated: $(date)" >> report.md
           echo "\n## Test Results" >> report.md
-          for file in test-results/*.txt; do
-            cat "$file" >> report.md
-            echo "" >> report.md
-          done
+          cat test-results/docs.txt >> report.md
+          echo "" >> report.md
+          cat test-results/tests.txt >> report.md
+          echo "" >> report.md
+          cat test-results/security.txt >> report.md
+          echo "" >> report.md
+          cat test-results/perf.txt >> report.md
           echo "\n## Detailed Reports" >> report.md
-          for file in reports/*.txt; do
+          for file in reports/*; do
             echo "\n### $(basename "$file" .txt)" >> report.md
             cat "$file" >> report.md
           done

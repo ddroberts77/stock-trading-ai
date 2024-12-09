@@ -29,7 +29,7 @@ class TradingModel(nn.Module):
         lstm_out, (h_n, _) = self.lstm(market_data)
         final_hidden = h_n[-1]  # [batch_size, hidden_size]
         
-        # Generate unconstrained positions
+        # Generate positions
         positions = self.position_head(final_hidden)  # [batch_size, num_assets]
         
         # Apply leverage constraint: sum of absolute positions <= 1

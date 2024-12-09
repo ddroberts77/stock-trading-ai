@@ -2,10 +2,6 @@ import pytest
 import torch
 from src.models.meta_learner import MarketMetaLearner
 
-@pytest.fixture
-def device():
-    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 def test_meta_learner_initialization(device):
     model = MarketMetaLearner(input_size=10, hidden_size=20, num_layers=2).to(device)
     assert isinstance(model, MarketMetaLearner)
@@ -17,18 +13,14 @@ def test_meta_learner_forward_pass(device):
     batch_size = 32
     seq_length = 50
     
-    # Move input tensors to the same device as the model
     x = torch.randn(batch_size, seq_length, 10).to(device)
-    market_data = torch.randn(batch_size, 5).to(device)  # Additional market features
+    market_data = torch.randn(batch_size, 5).to(device)
     
     with torch.no_grad():
         market_regime, adaptation_params = model(x, market_data)
     
-    # Test output shapes
     assert market_regime.shape == (batch_size, 3)
     assert adaptation_params.shape == (batch_size, 20)
-    
-    # Test output values are valid (no NaN/inf)
     assert torch.isfinite(market_regime).all()
     assert torch.isfinite(adaptation_params).all()
 
@@ -40,16 +32,10 @@ def test_meta_learner_backward_pass(device):
     x = torch.randn(batch_size, seq_length, 10, requires_grad=True).to(device)
     market_data = torch.randn(batch_size, 5, requires_grad=True).to(device)
     
-    # Forward pass
     market_regime, adaptation_params = model(x, market_data)
-    
-    # Compute dummy loss
     loss = market_regime.mean() + adaptation_params.mean()
-    
-    # Test backward pass
     loss.backward()
     
-    # Check gradients exist and are finite
     assert x.grad is not None
     assert market_data.grad is not None
     assert torch.isfinite(x.grad).all()

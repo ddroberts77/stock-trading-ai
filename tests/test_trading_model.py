@@ -3,8 +3,17 @@ import torch
 from src.models.trading_model import TradingModel
 
 @pytest.fixture
-def model(device):
+def model():
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     return TradingModel(input_size=10, hidden_size=32, num_assets=5).to(device)
+
+@pytest.fixture
+def sample_market_data():
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    batch_size = 16
+    seq_length = 20
+    feature_dim = 10
+    return torch.randn(batch_size, seq_length, feature_dim).to(device)
 
 def test_trading_model_initialization(model):
     assert isinstance(model, TradingModel)

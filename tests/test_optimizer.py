@@ -11,7 +11,7 @@ class SimpleModel(nn.Module):
     
     def forward(self, x):
         lstm_out, _ = self.lstm(x)
-        return self.linear(lstm_out[:, -1, :])  # Use last timestep
+        return self.linear(lstm_out[:, -1, :])
 
 @pytest.fixture
 def model_creator():
@@ -43,11 +43,9 @@ def test_train_best_model(optimizer):
     X = torch.randn(100, 10, 5)
     y = torch.randn(100, 1)
     
-    # First optimize
     optimizer.optimize(X, y, cv=2)
-    
-    # Then train
     history = optimizer.train_best_model(X, y)
+    
     assert 'loss' in history
     assert len(history['loss']) > 0
     assert all(isinstance(loss, float) for loss in history['loss'])

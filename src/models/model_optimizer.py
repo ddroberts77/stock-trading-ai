@@ -6,13 +6,6 @@ import numpy as np
 
 class ModelOptimizer:
     def __init__(self, model_creator: Callable, param_grid: Dict[str, list]):
-        """
-        Initialize the model optimizer.
-        
-        Args:
-            model_creator: Function that creates a PyTorch model
-            param_grid: Dictionary of parameters to optimize
-        """
         self.model_creator = model_creator
         self.param_grid = param_grid
         self.best_params = None
@@ -22,7 +15,6 @@ class ModelOptimizer:
     def _train_evaluate_model(self, model: nn.Module, train_data: torch.Tensor, 
                             train_labels: torch.Tensor, val_data: torch.Tensor, 
                             val_labels: torch.Tensor, params: Dict[str, Any]) -> float:
-        """Train and evaluate a model configuration."""
         model = model.to(self.device)
         optimizer = torch.optim.Adam(model.parameters(), lr=params.get('learning_rate', 0.001))
         criterion = nn.MSELoss()
@@ -51,14 +43,6 @@ class ModelOptimizer:
         return -val_loss.item()  # Negative because we want to maximize score
         
     def optimize(self, X: torch.Tensor, y: torch.Tensor, cv: int = 3) -> Dict[str, Any]:
-        """
-        Perform grid search with cross-validation.
-        
-        Args:
-            X: Input data tensor
-            y: Target tensor
-            cv: Number of cross-validation folds
-        """
         kf = KFold(n_splits=cv, shuffle=True)
         
         for params in self._get_param_combinations():
@@ -91,7 +75,6 @@ class ModelOptimizer:
         return self.best_params
     
     def _get_param_combinations(self):
-        """Generate all parameter combinations from param_grid."""
         import itertools
         keys = self.param_grid.keys()
         values = self.param_grid.values()
@@ -99,7 +82,6 @@ class ModelOptimizer:
             yield dict(zip(keys, instance))
     
     def train_best_model(self, X: torch.Tensor, y: torch.Tensor) -> Dict[str, Any]:
-        """Train a model with the best parameters."""
         if self.best_params is None:
             raise ValueError("Must run optimize() before training best model")
             

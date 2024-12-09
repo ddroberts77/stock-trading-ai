@@ -1,1 +1,1 @@
-# Version and imports
+# Package initialization

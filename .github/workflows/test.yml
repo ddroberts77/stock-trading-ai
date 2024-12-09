@@ -28,8 +28,10 @@ jobs:
         pip install torch numpy pandas pytest pytest-cov pytest-junit scikit-learn
     
     - name: Run tests
+      env:
+        PYTHONPATH: ${{ github.workspace }}
       run: |
-        PYTHONPATH=$PYTHONPATH:$(pwd) pytest tests/ -v --cov=src --junitxml=test-results/junit/test-results.xml
+        pytest tests/ -v --cov=src --junitxml=test-results/junit/test-results.xml
     
     - name: Upload test results
       if: always()

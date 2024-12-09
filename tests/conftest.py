@@ -1,5 +1,11 @@
-import os
-import sys
+import pytest
+import torch
 
-# Add the project root directory to the Python path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+@pytest.fixture(scope='session')
+def device():
+    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+@pytest.fixture(autouse=True)
+def set_random_seed():
+    torch.manual_seed(42)
+    return None

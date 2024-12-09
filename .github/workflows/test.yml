@@ -33,7 +33,7 @@ jobs:
       env:
         PYTHONPATH: ${{ github.workspace }}
       run: |
-        pytest tests/ -v --cov=src --cov-report=xml:coverage/coverage-${{ matrix.python-version }}.xml
+        python -m pytest tests/ -v --cov=src --cov-report=xml:coverage/coverage-${{ matrix.python-version }}.xml
     
     - name: Upload coverage reports
       if: always()

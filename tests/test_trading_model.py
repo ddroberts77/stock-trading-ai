@@ -5,7 +5,9 @@ from src.models.trading_model import TradingModel
 @pytest.fixture
 def model():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    return TradingModel(input_size=10, hidden_size=32, num_assets=5).to(device)
+    model = TradingModel(input_size=10, hidden_size=32, num_assets=5).to(device)
+    model.eval()  # Set to eval mode for testing
+    return model
 
 @pytest.fixture
 def sample_market_data():

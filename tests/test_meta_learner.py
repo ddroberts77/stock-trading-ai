@@ -5,7 +5,9 @@ from src.models.meta_learner import MarketMetaLearner
 @pytest.fixture
 def model():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    return MarketMetaLearner(input_size=10, hidden_size=20, num_layers=2).to(device)
+    model = MarketMetaLearner(input_size=10, hidden_size=20, num_layers=2).to(device)
+    model.eval()  # Set to eval mode for testing
+    return model
 
 @pytest.fixture
 def sample_data():
